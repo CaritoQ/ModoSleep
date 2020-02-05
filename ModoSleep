@@ -1,53 +1,50 @@
 /*cada 2 segundos el sistema se encuentre activado 
  * y cada 10 segundos el sistema baje su consumo de corriente 
  */
-#include<avr/wdt.h>
-#include<MsTimer2.h>
+#include<TimerOne.h>
+#include<avr/sleep.h>
+#include<avr/power.h>
+#include <avr/wdt.h>
+#include<EEPROM.h>
+int conteo = 0;
+int e;
 
-String d="";
-int s=0;
 void setup() {
-  wdt_disable();
-  MsTimer2::set(1000,tiempo);
-  MsTimer2::stop();
   Serial.begin(9600);
-  Serial.println("Ingresar una letra: ");  
+  estado = EEPROM.read(0);
+  EEPROM.write(0, 1);
+  attachInterrupt(0, wakeup1, LOW);
+  Timer1.initialize(1000000);
+  Timer1.attachInterrupt(conteo);
+  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+  Serial.begin(9600);
+  Serial.println(e);
+
+
 }
 
 void loop() {
-  
-  if(Serial.available()>0){
-  d=Serial.readString();
-  Serial.println(" ");
+  if (conteo == 2 ) {
+    Serial.println("SIST ACTIVO");
+    EEPROM.write(0, 1);
+    Serial.println(e);
   }
-  
-   if (d=="A"){
-      Serial.println("1S");
-      MsTimer2::start();
-      wdt_enable(WDTO_1S);
-      d="";
-   }
-   if (d=="B"){
-      Serial.println("2S");
-      MsTimer2::start();
-      wdt_enable(WDTO_2S);
-      d="";
-   }
-   if (d=="C"){
-      Serial.println("4S");
-      MsTimer2::start();
-      wdt_enable(WDTO_4S);
-      d="";
-   }
-      if (datos=="D"){
-      Serial.println("8S");
-      MsTimer2::start();
-      wdt_enable(WDTO_8S);
-      d="";
-    }
+  if (conteo == 12) {
+    Serial.println("SIST DORMIDO");
+    EEPROM.update(0, 0);
+    sleep_mode();
+    sleep_enable();
+    sleep_disable();
+  }
 }
 
-void tiempo(){
-  s++;
-    Serial.println(s);
-  }
+void contador() {
+  conteo++;
+
+}
+
+void wakeup1() {
+  sleep_disable();
+  Serial.println("REINICAR");
+  conteo = 0;
+}
